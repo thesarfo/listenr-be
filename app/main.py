@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db
 from app.logging_config import setup_logging, get_logger
+from app.services.seed_admin import seed_admin_user
 from app.middleware.logging_middleware import LoggingMiddleware
 from app.routes import (
     health,
@@ -34,6 +35,8 @@ async def lifespan(app: FastAPI):
     logger.info("Starting %s", settings.app_name)
     init_db()
     logger.info("Database initialized")
+    seed_admin_user()
+    logger.info("Admin user seeded")
     yield
     logger.info("Shutting down")
 

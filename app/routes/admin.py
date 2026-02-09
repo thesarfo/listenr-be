@@ -4,17 +4,15 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy import func
-from app.config import settings
 from app.database import get_db
-from app.models import User, Album, Review, LogEntry, List, Follow, Track
+from app.models import User, Album, Review, LogEntry, List, Follow, Track, ListAlbum, FavoriteAlbum
 from app.middleware.auth import get_current_user_required
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _require_admin(user: User) -> None:
-    admin_ids = {x.strip() for x in settings.admin_user_ids.split(",") if x.strip()}
-    if user.id not in admin_ids:
+    if not getattr(user, "is_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
@@ -144,6 +142,28 @@ def get_analytics(
         "top_genres": top_genres,
         "recent_activity": recent_activity,
     }
+
+
+@router.delete("/albums/{album_id}")
+def delete_album(
+    album_id: str,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Delete an album and all related records. Requires admin."""
+    _require_admin(user)
+    album = db.query(Album).filter(Album.id == album_id).first()
+    if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    # Delete related records (no CASCADE on album_id)
+    db.query(Track).filter(Track.album_id == album_id).delete()
+    db.query(Review).filter(Review.album_id == album_id).delete()
+    db.query(LogEntry).filter(LogEntry.album_id == album_id).delete()
+    db.query(ListAlbum).filter(ListAlbum.album_id == album_id).delete()
+    db.query(FavoriteAlbum).filter(FavoriteAlbum.album_id == album_id).delete()
+    db.delete(album)
+    db.commit()
+    return {"message": "ok"}
 
 
 @router.post("/deduplicate-albums")

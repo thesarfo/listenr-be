@@ -40,3 +40,8 @@ def init_db() -> None:
             if "wikipedia_url" not in cols:
                 conn.execute(text("ALTER TABLE albums ADD COLUMN wikipedia_url VARCHAR(512)"))
                 conn.commit()
+            r = conn.execute(text("PRAGMA table_info(users)"))
+            cols = [row[1] for row in r.fetchall()]
+            if "is_admin" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"))
+                conn.commit()
