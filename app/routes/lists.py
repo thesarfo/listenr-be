@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 from app.database import get_db
 from app.models import List, ListAlbum, Album, ListLike, ListCollaborator, User, Notification
 from app.schemas.list import ListCreate, ListUpdate, AddAlbumToList, AddCollaborator
-from app.middleware.auth import get_current_user_required
+from app.middleware.auth import get_current_user, get_current_user_required
 from app.utils import generate_id
 
 router = APIRouter(prefix="/lists", tags=["lists"])
@@ -24,11 +24,17 @@ def _can_edit_list(l: List, user, db) -> bool:
     ).first() is not None
 
 
-def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False, include_preview_albums=False):
+def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False, include_preview_albums=False, current_user_id: str | None = None):
     from app.models import User
     albums_count = db.query(func.count(ListAlbum.id)).filter(ListAlbum.list_id == l.id).scalar() or 0
     likes = db.query(func.count(ListLike.user_id)).filter(ListLike.list_id == l.id).scalar() or 0
     owner = db.query(User).filter(User.id == l.user_id).first()
+    user_liked = False
+    if current_user_id:
+        user_liked = db.query(ListLike).filter(
+            ListLike.list_id == l.id,
+            ListLike.user_id == current_user_id,
+        ).first() is not None
     d = {
         "id": l.id,
         "user_id": l.user_id,
@@ -38,6 +44,7 @@ def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False
         "cover_url": l.cover_url,
         "albums_count": albums_count,
         "likes": likes,
+        "user_liked": user_liked if current_user_id else False,
         "created_at": l.created_at.isoformat() if l.created_at else None,
     }
     if include_preview_albums:
@@ -86,16 +93,36 @@ def get_my_lists(
     """Lists owned by user + lists where user is collaborator."""
     collab_list_ids = db.query(ListCollaborator.list_id).filter(ListCollaborator.user_id == user.id).subquery()
     lists = db.query(List).filter(or_(List.user_id == user.id, List.id.in_(collab_list_ids))).all()
-    return [_list_to_dict(l, db, include_preview_albums=True) for l in lists]
+    return [_list_to_dict(l, db, include_preview_albums=True, current_user_id=user.id) for l in lists]
+
+
+@router.get("/liked")
+def get_liked_lists(
+    user=Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Lists the current user has liked."""
+    liked_list_ids = db.query(ListLike.list_id).filter(ListLike.user_id == user.id).subquery()
+    lists = db.query(List).filter(List.id.in_(liked_list_ids)).all()
+    return [_list_to_dict(l, db, include_preview_albums=True, current_user_id=user.id) for l in lists]
 
 
 @router.get("/{list_id}")
-def get_list(list_id: str, db=Depends(get_db)):
+def get_list(
+    list_id: str,
+    db=Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+):
     """Get list by ID. Public - no auth required (for shareable links)."""
     l = db.query(List).filter(List.id == list_id).first()
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
-    return _list_to_dict(l, db, include_albums=True, include_collaborators=True)
+    return _list_to_dict(
+        l, db,
+        include_albums=True,
+        include_collaborators=True,
+        current_user_id=current_user.id if current_user else None,
+    )
 
 
 @router.post("")
