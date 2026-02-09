@@ -1,6 +1,7 @@
 """
 Cron-friendly album seeding: reads priority batches from seed_priorities.txt,
 then seeds albums for each (genre, country, artist, count) batch.
+Runs deduplication in parallel to remove duplicate albums.
 
 For Railway cron: set start command to:
   python -m scripts.seed_cron
@@ -12,11 +13,13 @@ Text file format (seed_priorities.txt):
   Empty or - means "any". Lines starting with # are ignored.
 """
 import sys
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.seed_albums import seed
+from scripts.deduplicate_albums import deduplicate_albums
 
 PRIORITIES_FILE = Path(__file__).resolve().parent / "seed_priorities.txt"
 
@@ -69,6 +72,16 @@ def main() -> None:
     batches = load_priorities(PRIORITIES_FILE)
     total_target = 0
 
+    # Run deduplication in parallel with seeding
+    def run_dedup() -> None:
+        try:
+            deduplicate_albums()
+        except Exception as e:
+            print(f"Deduplication error: {e}")
+
+    dedup_thread = threading.Thread(target=run_dedup, daemon=True)
+    dedup_thread.start()
+
     for genre, country, artist, count in batches:
         filter_parts = []
         if genre:
@@ -81,6 +94,8 @@ def main() -> None:
         print(f"\n--- Seeding {filter_str} (up to {count} albums) ---")
         seed(count=count, batch_size=25, genre=genre, country=country, artist=artist)
         total_target += count
+
+    dedup_thread.join(timeout=300)  # Wait up to 5 min for dedup to finish
 
     print(f"\nCron seed complete. Target: {total_target} albums (duplicates skipped).")
 
