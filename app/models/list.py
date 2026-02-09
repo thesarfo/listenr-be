@@ -1,9 +1,22 @@
-"""List and ListAlbum models."""
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey
+"""List, ListAlbum, and ListCollaborator models."""
+from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.models.base import Base
+
+
+class ListCollaborator(Base):
+    """User who can edit a list (in addition to owner)."""
+    __tablename__ = "list_collaborators"
+    __table_args__ = (UniqueConstraint("list_id", "user_id", name="uq_list_collaborator"),)
+
+    list_id = Column(String(36), ForeignKey("lists.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    list = relationship("List", back_populates="collaborators")
+    user = relationship("User", backref="collaborating_lists")
 
 
 class List(Base):
@@ -19,6 +32,7 @@ class List(Base):
 
     owner = relationship("User", back_populates="lists")
     list_albums = relationship("ListAlbum", back_populates="list", order_by="ListAlbum.position")
+    collaborators = relationship("ListCollaborator", back_populates="list", cascade="all, delete-orphan")
 
 
 class ListAlbum(Base):

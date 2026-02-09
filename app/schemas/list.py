@@ -32,3 +32,7 @@ class ListDetailResponse(ListResponse):
 
 class AddAlbumToList(BaseModel):
     album_id: str
+
+
+class AddCollaborator(BaseModel):
+    username: str

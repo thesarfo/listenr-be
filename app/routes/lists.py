@@ -1,23 +1,38 @@
 """List routes."""
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from app.database import get_db
-from app.models import List, ListAlbum, Album, ListLike
-from app.schemas.list import ListCreate, ListUpdate, AddAlbumToList
+from app.models import List, ListAlbum, Album, ListLike, ListCollaborator, User
+from app.schemas.list import ListCreate, ListUpdate, AddAlbumToList, AddCollaborator
 from app.middleware.auth import get_current_user_required
 from app.utils import generate_id
 
 router = APIRouter(prefix="/lists", tags=["lists"])
 
 
-def _list_to_dict(l: List, db, include_albums=False):
+def _can_edit_list(l: List, user, db) -> bool:
+    """Check if user is owner or collaborator."""
+    if not user:
+        return False
+    if l.user_id == user.id:
+        return True
+    return db.query(ListCollaborator).filter(
+        ListCollaborator.list_id == l.id,
+        ListCollaborator.user_id == user.id,
+    ).first() is not None
+
+
+def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False):
+    from app.models import User
     albums_count = db.query(func.count(ListAlbum.id)).filter(ListAlbum.list_id == l.id).scalar() or 0
     likes = db.query(func.count(ListLike.user_id)).filter(ListLike.list_id == l.id).scalar() or 0
+    owner = db.query(User).filter(User.id == l.user_id).first()
     d = {
         "id": l.id,
         "user_id": l.user_id,
+        "owner_username": owner.username if owner else None,
         "title": l.title,
         "description": l.description,
         "cover_url": l.cover_url,
@@ -25,6 +40,14 @@ def _list_to_dict(l: List, db, include_albums=False):
         "likes": likes,
         "created_at": l.created_at.isoformat() if l.created_at else None,
     }
+    if include_collaborators:
+        collabs = (
+            db.query(User)
+            .join(ListCollaborator, ListCollaborator.user_id == User.id)
+            .filter(ListCollaborator.list_id == l.id)
+            .all()
+        )
+        d["collaborators"] = [{"id": u.id, "username": u.username, "avatar_url": u.avatar_url} for u in collabs]
     if include_albums:
         list_albums = (
             db.query(ListAlbum)
@@ -46,16 +69,19 @@ def get_my_lists(
     user=Depends(get_current_user_required),
     db=Depends(get_db),
 ):
-    lists = db.query(List).filter(List.user_id == user.id).all()
+    """Lists owned by user + lists where user is collaborator."""
+    collab_list_ids = db.query(ListCollaborator.list_id).filter(ListCollaborator.user_id == user.id).subquery()
+    lists = db.query(List).filter(or_(List.user_id == user.id, List.id.in_(collab_list_ids))).all()
     return [_list_to_dict(l, db) for l in lists]
 
 
 @router.get("/{list_id}")
 def get_list(list_id: str, db=Depends(get_db)):
+    """Get list by ID. Public - no auth required (for shareable links)."""
     l = db.query(List).filter(List.id == list_id).first()
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
-    return _list_to_dict(l, db, include_albums=True)
+    return _list_to_dict(l, db, include_albums=True, include_collaborators=True)
 
 
 @router.post("")
@@ -86,7 +112,7 @@ def update_list(
     l = db.query(List).filter(List.id == list_id).first()
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
-    if l.user_id != user.id:
+    if not _can_edit_list(l, user, db):
         raise HTTPException(status_code=403, detail="Not your list")
     if data.title is not None:
         l.title = data.title
@@ -107,10 +133,11 @@ def delete_list(
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
     if l.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not your list")
+        raise HTTPException(status_code=403, detail="Only the owner can delete the list")
     # Delete child rows first (FK constraints)
     db.query(ListAlbum).filter(ListAlbum.list_id == list_id).delete()
     db.query(ListLike).filter(ListLike.list_id == list_id).delete()
+    db.query(ListCollaborator).filter(ListCollaborator.list_id == list_id).delete()
     db.delete(l)
     db.commit()
     return {"message": "ok"}
@@ -126,7 +153,7 @@ def add_album_to_list(
     l = db.query(List).filter(List.id == list_id).first()
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
-    if l.user_id != user.id:
+    if not _can_edit_list(l, user, db):
         raise HTTPException(status_code=403, detail="Not your list")
     album = db.query(Album).filter(Album.id == data.album_id).first()
     if not album:
@@ -153,7 +180,7 @@ def remove_album_from_list(
     l = db.query(List).filter(List.id == list_id).first()
     if not l:
         raise HTTPException(status_code=404, detail="List not found")
-    if l.user_id != user.id:
+    if not _can_edit_list(l, user, db):
         raise HTTPException(status_code=403, detail="Not your list")
     db.query(ListAlbum).filter(ListAlbum.list_id == list_id, ListAlbum.album_id == album_id).delete()
     db.commit()
@@ -185,5 +212,59 @@ def unlike_list(
     db=Depends(get_db),
 ):
     db.query(ListLike).filter(ListLike.user_id == user.id, ListLike.list_id == list_id).delete()
+    db.commit()
+    return {"message": "ok"}
+
+
+@router.post("/{list_id}/collaborators")
+def add_collaborator(
+    list_id: str,
+    data: AddCollaborator,
+    user=Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Add a collaborator by username. Only owner can add collaborators."""
+    l = db.query(List).filter(List.id == list_id).first()
+    if not l:
+        raise HTTPException(status_code=404, detail="List not found")
+    if l.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the owner can add collaborators")
+    collaborator = db.query(User).filter(User.username == data.username.strip()).first()
+    if not collaborator:
+        raise HTTPException(status_code=404, detail="User not found")
+    if collaborator.id == user.id:
+        raise HTTPException(status_code=400, detail="You are already the owner")
+    existing = db.query(ListCollaborator).filter(
+        ListCollaborator.list_id == list_id,
+        ListCollaborator.user_id == collaborator.id,
+    ).first()
+    if existing:
+        return {"message": "Already a collaborator"}
+    db.add(ListCollaborator(list_id=list_id, user_id=collaborator.id))
+    db.commit()
+    return {"message": "ok", "user": {"id": collaborator.id, "username": collaborator.username, "avatar_url": collaborator.avatar_url}}
+
+
+@router.delete("/{list_id}/collaborators/{user_id}")
+def remove_collaborator(
+    list_id: str,
+    user_id: str,
+    user=Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Remove a collaborator. Owner can remove anyone; collaborators can remove themselves."""
+    l = db.query(List).filter(List.id == list_id).first()
+    if not l:
+        raise HTTPException(status_code=404, detail="List not found")
+    if l.user_id == user.id:
+        pass  # owner can remove anyone
+    elif user_id == user.id:
+        pass  # collaborator can remove self
+    else:
+        raise HTTPException(status_code=403, detail="Cannot remove this collaborator")
+    db.query(ListCollaborator).filter(
+        ListCollaborator.list_id == list_id,
+        ListCollaborator.user_id == user_id,
+    ).delete()
     db.commit()
     return {"message": "ok"}
