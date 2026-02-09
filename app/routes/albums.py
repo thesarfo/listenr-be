@@ -81,20 +81,13 @@ def trending_albums(
     limit: int = Query(10, ge=1, le=50),
     db=Depends(get_db),
 ):
-    subq = (
-        db.query(Review.album_id, func.count(Review.id).label("cnt"))
-        .group_by(Review.album_id)
-        .subquery()
-    )
+    """Albums recently released (by year, newest first)."""
     albums = (
         db.query(Album)
-        .join(subq, Album.id == subq.c.album_id)
-        .order_by(subq.c.cnt.desc())
+        .order_by(Album.year.desc().nullslast(), Album.created_at.desc())
         .limit(limit)
         .all()
     )
-    if not albums:
-        albums = db.query(Album).order_by(Album.created_at.desc()).limit(limit).all()
     return [_album_to_dict(a) for a in albums]
 
 

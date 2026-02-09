@@ -25,6 +25,22 @@ def trending(
     limit: int = Query(10, ge=1, le=50),
     db=Depends(get_db),
 ):
+    """Albums recently released (by year, newest first)."""
+    albums = (
+        db.query(Album)
+        .order_by(Album.year.desc().nullslast(), Album.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [_album_brief(a) for a in albums]
+
+
+@router.get("/popular")
+def popular(
+    limit: int = Query(10, ge=1, le=50),
+    db=Depends(get_db),
+):
+    """Albums with the most reviews."""
     subq = (
         db.query(Review.album_id, func.count(Review.id).label("cnt"))
         .group_by(Review.album_id)
@@ -38,7 +54,6 @@ def trending(
         .all()
     )
     if not albums:
-        # Fallback: show recent albums from catalog when no reviews yet
         albums = db.query(Album).order_by(Album.created_at.desc()).limit(limit).all()
     return [_album_brief(a) for a in albums]
 
@@ -50,7 +65,7 @@ def popular_with_friends(
     user=Depends(get_current_user),
 ):
     if not user:
-        return trending(limit=limit, db=db)
+        return popular(limit=limit, db=db)
     following = db.query(Follow.following_id).filter(Follow.follower_id == user.id).subquery()
     subq = (
         db.query(LogEntry.album_id, func.count(LogEntry.id).label("cnt"))
