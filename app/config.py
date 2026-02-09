@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     gemini_api_key: str | None = None
     admin_user_ids: str = ""  # Comma-separated user IDs allowed to access admin dashboard
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
 
     class Config:
         env_file = ".env"
