@@ -21,6 +21,7 @@ from app.routes import (
     search,
     notifications,
     integrations,
+    admin,
 )
 
 
@@ -67,6 +68,7 @@ app.include_router(ai.router, prefix=settings.api_v1_prefix)
 app.include_router(search.router, prefix=settings.api_v1_prefix)
 app.include_router(notifications.router, prefix=settings.api_v1_prefix)
 app.include_router(integrations.router, prefix=settings.api_v1_prefix)
+app.include_router(admin.router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/")

@@ -3,6 +3,7 @@ import urllib.parse
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.config import settings
 from app.database import get_db
 from app.models import User
 from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse
@@ -56,6 +57,8 @@ def logout():
 
 @router.get("/me")
 def me(user: User = Depends(get_current_user_required)):
+    admin_ids = {x.strip() for x in settings.admin_user_ids.split(",") if x.strip()}
+    is_admin = user.id in admin_ids
     return {
         "id": user.id,
         "username": user.username,
@@ -63,6 +66,7 @@ def me(user: User = Depends(get_current_user_required)):
         "avatar_url": user.avatar_url,
         "bio": user.bio,
         "created_at": user.created_at.isoformat(),
+        "is_admin": is_admin,
     }
 
 
