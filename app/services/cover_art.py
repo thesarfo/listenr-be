@@ -10,7 +10,7 @@ from typing import Optional
 
 import httpx
 
-USER_AGENT = "Listenr/1.0 (https://github.com/musicboxd)"
+USER_AGENT = "Listenr/1.0 (https://github.com/listenr)"
 DODO_ARTWORK_URL = "https://artwork.dodoapps.io/"
 MB_BASE = "https://musicbrainz.org/ws/2"
 CAA_BASE = "https://coverartarchive.org"

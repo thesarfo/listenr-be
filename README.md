@@ -26,7 +26,7 @@ FastAPI backend for the Listenr music logging and discovery platform.
 5. (Optional) Seed development data:
    ```bash
    python -m scripts.seed.py
-   # Login: demo@musicboxd.com / demo123
+   # Login: demo@listenr.com / demo123
    ```
 
 6. (Optional) Seed albums with **real cover art** from MusicBrainz + iTunes:
@@ -72,6 +72,18 @@ FastAPI backend for the Listenr music logging and discovery platform.
    ```
 
 The API will be available at `http://127.0.0.1:8000`. Docs at `/docs`.
+
+## Deploy to Railway
+
+1. Create a [Railway](https://railway.app) project and add a **PostgreSQL** service.
+2. Add a new service from your GitHub repo (or use `railway up` from the CLI).
+3. Set the **root directory** to `backend` if deploying from the monorepo.
+4. Railway will auto-detect `railway.json` and use it for the start command and health check.
+5. Add the PostgreSQL service as a reference to your backend service—Railway injects `DATABASE_URL` automatically.
+6. Set `JWT_SECRET` (and optionally `GEMINI_API_KEY`) in Variables. Use a strong random secret in production.
+7. Generate a domain in **Networking** to make the API publicly accessible.
+
+Tables are created automatically on first start via `init_db()`.
 
 ## API Endpoints
 

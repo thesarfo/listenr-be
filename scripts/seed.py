@@ -18,7 +18,7 @@ def seed():
         user = User(
             id=generate_id(),
             username="music_connoisseur",
-            email="demo@musicboxd.com",
+            email="demo@listenr.com",
             hashed_password=get_password_hash("demo123"),
             bio="Dedicated crate digger. Exploring Japanese jazz fusion, 70s soul, and early synth-pop.",
         )
@@ -39,7 +39,7 @@ def seed():
             )
             db.add(a)
         db.commit()
-        print("Seed complete. User: demo@musicboxd.com / demo123")
+        print("Seed complete. User: demo@listenr.com / demo123")
     finally:
         db.close()
 

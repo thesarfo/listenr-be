@@ -12,7 +12,7 @@ from typing import Optional, Tuple
 
 import httpx
 
-USER_AGENT = "Listenr/1.0 (https://github.com/musicboxd)"
+USER_AGENT = "Listenr/1.0 (https://github.com/listenr)"
 MB_BASE = "https://musicbrainz.org/ws/2"
 WIKI_API = "https://en.wikipedia.org/w/api.php"
 

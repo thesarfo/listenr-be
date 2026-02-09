@@ -32,7 +32,7 @@ from app.utils import generate_id
 
 
 # MusicBrainz requires a descriptive User-Agent
-USER_AGENT = "Listenr/1.0 (https://github.com/musicboxd)"
+USER_AGENT = "Listenr/1.0 (https://github.com/listenr)"
 MB_BASE = "https://musicbrainz.org/ws/2"
 CAA_BASE = "https://coverartarchive.org"
 RATE_LIMIT_DELAY = 1.1  # seconds between requests (MusicBrainz asks for max 1/sec)
