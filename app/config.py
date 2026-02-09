@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "Listenr API"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://listenr-bice.vercel.app"
     database_url: str = "sqlite:///./listenr.db"  # Use DATABASE_URL env for PostgreSQL
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
