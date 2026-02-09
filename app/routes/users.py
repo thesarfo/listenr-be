@@ -21,8 +21,15 @@ def get_user_by_username(username: str, db=Depends(get_db)):
 
 
 @router.get("/recommended")
-def get_recommended(db=Depends(get_db), limit: int = 10):
-    users = db.query(User).limit(limit).all()
+def get_recommended(
+    db=Depends(get_db),
+    limit: int = 10,
+    current_user: User | None = Depends(get_current_user),
+):
+    qry = db.query(User)
+    if current_user:
+        qry = qry.filter(User.id != current_user.id)
+    users = qry.limit(limit).all()
     return [{"id": u.id, "username": u.username, "avatar_url": u.avatar_url} for u in users]
 
 
@@ -34,6 +41,8 @@ def get_user(user_id: str, db=Depends(get_db)):
     albums = db.query(func.count(Review.id)).filter(Review.user_id == user_id).scalar() or 0
     reviews = db.query(func.count(Review.id)).filter(Review.user_id == user_id).scalar() or 0
     lists = db.query(func.count(List.id)).filter(List.user_id == user_id).scalar() or 0
+    following_count = db.query(func.count(Follow.following_id)).filter(Follow.follower_id == user_id).scalar() or 0
+    followers_count = db.query(func.count(Follow.follower_id)).filter(Follow.following_id == user_id).scalar() or 0
     return {
         "id": user.id,
         "username": user.username,
@@ -43,6 +52,8 @@ def get_user(user_id: str, db=Depends(get_db)):
         "albums_count": albums,
         "reviews_count": reviews,
         "lists_count": lists,
+        "following_count": following_count,
+        "followers_count": followers_count,
     }
 
 
