@@ -6,12 +6,14 @@ then fetches full album details (including tracks) via Get Album.
 
 Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env or environment.
 
-Usage:
-    python -m scripts.seed_albums_spotify                    # Seed 50 albums from new releases
-    python -m scripts.seed_albums_spotify --count 100        # Seed 100 albums
-    python -m scripts.seed_albums_spotify --query "rock"     # Search for "rock" albums
-    python -m scripts.seed_albums_spotify --query "year:2024"  # Albums from 2024
-    python -m scripts.seed_albums_spotify --clear            # Clear existing albums before seeding
+Usage (run from backend/ directory):
+    python scripts/seed_albums_spotify.py                    # Seed 50 albums from new releases
+    python scripts/seed_albums_spotify.py --count 100        # Seed 100 albums
+    python scripts/seed_albums_spotify.py --query "rock"     # Search for "rock" albums
+    python scripts/seed_albums_spotify.py --query "year:2024"  # Albums from 2024
+    python scripts/seed_albums_spotify.py --clear            # Clear existing albums before seeding
+
+For Railway/cron/containers, use the file path form above (not python -m).
 """
 import argparse
 import base64
