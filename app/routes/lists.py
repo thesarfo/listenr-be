@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from app.database import get_db
-from app.models import List, ListAlbum, Album, ListLike, ListCollaborator, User
+from app.models import List, ListAlbum, Album, ListLike, ListCollaborator, User, Notification
 from app.schemas.list import ListCreate, ListUpdate, AddAlbumToList, AddCollaborator
 from app.middleware.auth import get_current_user_required
 from app.utils import generate_id
@@ -201,6 +201,15 @@ def like_list(
         return {"message": "Already liked"}
     like = ListLike(user_id=user.id, list_id=list_id)
     db.add(like)
+    if l.user_id != user.id:
+        notif = Notification(
+            id=generate_id(),
+            user_id=l.user_id,
+            type="list_like",
+            title=f"{user.username} liked your list {l.title or 'Untitled'}",
+            ref_id=list_id,
+        )
+        db.add(notif)
     db.commit()
     return {"message": "ok"}
 
@@ -241,6 +250,14 @@ def add_collaborator(
     if existing:
         return {"message": "Already a collaborator"}
     db.add(ListCollaborator(list_id=list_id, user_id=collaborator.id))
+    notif = Notification(
+        id=generate_id(),
+        user_id=collaborator.id,
+        type="collaborator_added",
+        title=f"{user.username} added you as collaborator to {l.title or 'a list'}",
+        ref_id=list_id,
+    )
+    db.add(notif)
     db.commit()
     return {"message": "ok", "user": {"id": collaborator.id, "username": collaborator.username, "avatar_url": collaborator.avatar_url}}
 

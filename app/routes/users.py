@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy import func
 from app.database import get_db
-from app.models import User, Album, Review, List, FavoriteAlbum, Follow
+from app.models import User, Album, Review, List, FavoriteAlbum, Follow, Notification
 from app.schemas.user import UserProfileResponse, UserUpdate, FavoriteAlbumUpdate
 from app.middleware.auth import get_current_user, get_current_user_required
 from app.utils import generate_id
@@ -207,6 +207,14 @@ def follow_user(
         return {"message": "Already following"}
     f = Follow(follower_id=user.id, following_id=user_id)
     db.add(f)
+    notif = Notification(
+        id=generate_id(),
+        user_id=target.id,
+        type="follow",
+        title=f"{user.username} started following you",
+        ref_id=user.id,
+    )
+    db.add(notif)
     db.commit()
     return {"message": "ok"}
 

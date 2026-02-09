@@ -18,6 +18,10 @@ def get_notifications(
 ):
     qry = db.query(Notification).filter(Notification.user_id == user.id)
     total = qry.count()
+    unread_count = db.query(Notification).filter(
+        Notification.user_id == user.id,
+        Notification.read == False,
+    ).count()
     notifs = qry.order_by(Notification.read.asc(), Notification.created_at.desc()).offset(offset).limit(limit).all()
     return {
         "data": [
@@ -33,6 +37,7 @@ def get_notifications(
             for n in notifs
         ],
         "total": total,
+        "unread_count": unread_count,
         "limit": limit,
         "offset": offset,
     }
