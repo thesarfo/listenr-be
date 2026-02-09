@@ -1,0 +1,195 @@
+# Priority batches for album seeding (read by seed_cron.py)
+# Format: genre, country, artist, count
+# Leave field empty or use - for "any". Lines starting with # are ignored.
+#
+# Examples:
+#   hip hop, US, , 10      -> 10 hip hop albums from US
+#   jazz, , , 8            -> 8 jazz albums from any country
+#   , GB, The Beatles, 5   -> 5 albums by The Beatles from GB
+#   , , , 10               -> 10 general albums (no filter)
+
+hip hop, US, , 10
+hip hop, GH, , 10
+rap, US, , 10
+rap, GH, , 10
+afrobeats, GH, , 8
+afrobeats, NG, , 8
+highlife, GH, , 8
+jazz, US, , 8
+jazz, FR, , 5
+rock, GB, , 8
+rock, US, , 5
+R&B, US, , 8
+reggae, JM, , 8
+# Artists (genre, country left empty = any)
+, , Eminem, 20
+, , Jay-Z, 20
+, , Drake, 20
+, , J. Cole, 20
+, , Sarkodie, 20
+, , Asake, 20
+, , Kendrick Lamar, 20
+, , Kanye West, 20
+, , Nas, 20
+, , Burna Boy, 20
+, , Wizkid, 20
+, , Davido, 20
+, , Stonebwoy, 20
+, , Black Sherif, 20
+, , Tyler the Creator, 20
+, , Travis Scott, 20
+, , Cardi B, 20
+, , Nicki Minaj, 20
+, , Future, 20
+, , Lil Wayne, 20
+, , OutKast, 20
+, , 50 Cent, 20
+, , Dr. Dre, 20
+, , Snoop Dogg, 20
+, , The Weeknd, 20
+, , Rihanna, 20
+, , Beyoncé, 20
+, , Adele, 20
+, , Taylor Swift, 20
+, , The Beatles, 20
+, , Billie Eilish, 20
+, , Post Malone, 20
+, , Ed Sheeran, 20
+, , Coldplay, 20
+, , Radiohead, 20
+, , U2, 20
+, , Foo Fighters, 20
+, , Arctic Monkeys, 20
+, , Tame Impala, 20
+, , Dua Lipa, 20
+, , Harry Styles, 20
+, , Bruno Mars, 20
+, , Anderson .Paak, 20
+, , Frank Ocean, 20
+, , Childish Gambino, 20
+, , Mac Miller, 20
+, , A$AP Rocky, 20
+, , Vince Staples, 20
+, , Chance the Rapper, 20
+, , Logic, 20
+, , Big Sean, 20
+, , Migos, 20
+, , 21 Savage, 20
+, , J Hus, 20
+, , Stormzy, 20
+, , Dave, 20
+, , Skepta, 20
+, , Fela Kuti, 20
+, , King Sunny Ade, 20
+, , Oumou Sangaré, 20
+, , Angelique Kidjo, 20
+, , Bob Marley, 20
+, , Rema, 20
+, , Tems, 20
+, , Ayra Starr, 20
+, , Ckay, 20
+, , Fireboy DML, 20
+, , Joeboy, 20
+, , Omah Lay, 20
+, , Ruger, 20
+, , Oxlade, 20
+, , Ladipoe, 20
+, , Odumodublvck, 20
+, , Vector, 20
+, , M.I Abaga, 20
+, , Falz, 20
+, , Olamide, 20
+, , Phyno, 20
+, , Tiwa Savage, 20
+, , Yemi Alade, 20
+, , Shatta Wale, 20
+, , KiDi, 20
+, , Kuami Eugene, 20
+, , King Promise, 20
+, , Camidoh, 20
+, , Gyakie, 20
+, , Kwesi Arthur, 20
+, , Medikal, 20
+, , Fuse ODG, 20
+, , R2Bees, 20
+, , Amaarae, 20
+, , SZA, 20
+, , Doja Cat, 20
+, , Megan Thee Stallion, 20
+, , Lizzo, 20
+, , H.E.R., 20
+, , Jorja Smith, 20
+, , Kali Uchis, 20
+, , Steve Lacy, 20
+, , Brent Faiyaz, 20
+, , Daniel Caesar, 20
+, , Giveon, 20
+, , Summer Walker, 20
+, , Kehlani, 20
+, , Jhené Aiko, 20
+, , Miguel, 20
+, , The Internet, 20
+, , Erykah Badu, 20
+, , Lauryn Hill, 20
+, , D'Angelo, 20
+, , Jill Scott, 20
+, , Usher, 20
+, , Chris Brown, 20
+, , T-Pain, 20
+, , Pharrell Williams, 20
+, , Timbaland, 20
+, , Swae Lee, 20
+, , Young Thug, 20
+, , Gunna, 20
+, , Lil Baby, 20
+, , Rod Wave, 20
+, , NBA YoungBoy, 20
+, , Kodak Black, 20
+, , Pop Smoke, 20
+, , Juice WRLD, 20
+, , XXXTentacion, 20
+, , Lil Uzi Vert, 20
+, , Playboi Carti, 20
+, , Denzel Curry, 20
+, , JPEGMAFIA, 20
+, , Earl Sweatshirt, 20
+, , Isaiah Rashad, 20
+, , Schoolboy Q, 20
+, , Ab-Soul, 20
+, , Jay Rock, 20
+, , Pusha T, 20
+, , Kid Cudi, 20
+, , Lupe Fiasco, 20
+, , Common, 20
+, , Talib Kweli, 20
+, , Mos Def, 20
+, , Run the Jewels, 20
+, , JID, 20
+, , 6LACK, 20
+, , Joey Bada$$, 20
+, , A Tribe Called Quest, 20
+, , Wu-Tang Clan, 20
+, , Busta Rhymes, 20
+, , Method Man, 20
+, , MF DOOM, 20
+, , Freddie Gibbs, 20
+, , Aminé, 20
+, , Rico Nasty, 20
+, , Tierra Whack, 20
+, , Noname, 20
+, , Cordae, 20
+, , Polo G, 20
+, , Lil Durk, 20
+, , Lil Nas X, 20
+, , Jack Harlow, 20
+, , Baby Keem, 20
+, , Don Toliver, 20
+, , Metro Boomin, 20
+, , Bad Bunny, 20
+, , J Balvin, 20
+, , Rosalía, 20
+, , Rauw Alejandro, 20
+, , Karol G, 20
+, , Anitta, 20
+
+, , , 15
