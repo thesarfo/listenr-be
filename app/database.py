@@ -1,0 +1,37 @@
+"""Database connection and session management."""
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+
+from app.config import settings
+from app.models.base import Base
+
+engine = create_engine(
+    settings.database_url,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    poolclass=StaticPool if "sqlite" in settings.database_url else None,
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_db() -> Session:
+    """Dependency for getting database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def init_db() -> None:
+    """Create all tables."""
+    Base.metadata.create_all(bind=engine)
+    # Add wikipedia_url column if missing (migration for existing DBs)
+    if "sqlite" in settings.database_url:
+        with engine.connect() as conn:
+            r = conn.execute(text("PRAGMA table_info(albums)"))
+            cols = [row[1] for row in r.fetchall()]
+            if "wikipedia_url" not in cols:
+                conn.execute(text("ALTER TABLE albums ADD COLUMN wikipedia_url VARCHAR(512)"))
+                conn.commit()
