@@ -24,7 +24,7 @@ def _can_edit_list(l: List, user, db) -> bool:
     ).first() is not None
 
 
-def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False):
+def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False, include_preview_albums=False):
     from app.models import User
     albums_count = db.query(func.count(ListAlbum.id)).filter(ListAlbum.list_id == l.id).scalar() or 0
     likes = db.query(func.count(ListLike.user_id)).filter(ListLike.list_id == l.id).scalar() or 0
@@ -40,6 +40,20 @@ def _list_to_dict(l: List, db, include_albums=False, include_collaborators=False
         "likes": likes,
         "created_at": l.created_at.isoformat() if l.created_at else None,
     }
+    if include_preview_albums:
+        list_albums = (
+            db.query(ListAlbum)
+            .options(joinedload(ListAlbum.album))
+            .filter(ListAlbum.list_id == l.id)
+            .order_by(ListAlbum.position)
+            .limit(4)
+            .all()
+        )
+        d["preview_albums"] = [
+            {"id": la.album.id, "title": la.album.title, "artist": la.album.artist, "cover_url": la.album.cover_url}
+            for la in list_albums
+            if la.album is not None
+        ]
     if include_collaborators:
         collabs = (
             db.query(User)
@@ -72,7 +86,7 @@ def get_my_lists(
     """Lists owned by user + lists where user is collaborator."""
     collab_list_ids = db.query(ListCollaborator.list_id).filter(ListCollaborator.user_id == user.id).subquery()
     lists = db.query(List).filter(or_(List.user_id == user.id, List.id.in_(collab_list_ids))).all()
-    return [_list_to_dict(l, db) for l in lists]
+    return [_list_to_dict(l, db, include_preview_albums=True) for l in lists]
 
 
 @router.get("/{list_id}")
