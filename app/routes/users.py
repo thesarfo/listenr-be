@@ -244,3 +244,27 @@ def get_following(
         .all()
     )
     return [{"id": u.id, "username": u.username, "avatar_url": u.avatar_url} for u in follows]
+
+
+@router.get("/{user_id}/followers")
+def get_followers(user_id: str, db=Depends(get_db)):
+    """Users who follow this user. Public."""
+    users_list = (
+        db.query(User)
+        .join(Follow, Follow.follower_id == User.id)
+        .filter(Follow.following_id == user_id)
+        .all()
+    )
+    return [{"id": u.id, "username": u.username, "avatar_url": u.avatar_url} for u in users_list]
+
+
+@router.get("/{user_id}/following")
+def get_following_list(user_id: str, db=Depends(get_db)):
+    """Users this user follows. Public."""
+    users_list = (
+        db.query(User)
+        .join(Follow, Follow.following_id == User.id)
+        .filter(Follow.follower_id == user_id)
+        .all()
+    )
+    return [{"id": u.id, "username": u.username, "avatar_url": u.avatar_url} for u in users_list]

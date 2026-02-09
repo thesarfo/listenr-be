@@ -35,8 +35,11 @@ async def lifespan(app: FastAPI):
     logger.info("Starting %s", settings.app_name)
     init_db()
     logger.info("Database initialized")
-    seed_admin_user()
-    logger.info("Admin user seeded")
+    try:
+        seed_admin_user()
+        logger.info("Admin user seeded")
+    except Exception as e:
+        logger.warning("Admin seed failed (non-fatal): %s", e)
     yield
     logger.info("Shutting down")
 
