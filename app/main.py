@@ -1,4 +1,5 @@
 """FastAPI application entry point."""
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -29,17 +30,28 @@ from app.routes import (
 logger = get_logger("app.main")
 
 
+def _run_startup() -> None:
+    """Run DB init and admin seed in background (allows app to accept connections immediately)."""
+    try:
+        init_db()
+        logger.info("Database initialized")
+        try:
+            seed_admin_user()
+            logger.info("Admin user seeded")
+        except Exception as e:
+            logger.warning("Admin seed failed (non-fatal): %s", e)
+    except Exception as e:
+        logger.exception("Startup failed: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Starting %s", settings.app_name)
-    init_db()
-    logger.info("Database initialized")
-    try:
-        seed_admin_user()
-        logger.info("Admin user seeded")
-    except Exception as e:
-        logger.warning("Admin seed failed (non-fatal): %s", e)
+    # Run DB init in background so the app can bind and respond to health checks immediately.
+    # Uvicorn does not accept connections until lifespan yields.
+    thread = threading.Thread(target=_run_startup, daemon=True)
+    thread.start()
     yield
     logger.info("Shutting down")
 
