@@ -144,3 +144,13 @@ def get_analytics(
         "top_genres": top_genres,
         "recent_activity": recent_activity,
     }
+
+
+@router.post("/deduplicate-albums")
+def run_deduplicate_albums(user: User = Depends(get_current_user_required)):
+    """Run album deduplication. Removes duplicate albums (same title, artist, year). Requires admin."""
+    _require_admin(user)
+    from scripts.deduplicate_albums import deduplicate_albums
+
+    removed = deduplicate_albums()
+    return {"message": "ok", "removed": removed}
