@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from app.database import get_db
 from app.services.cover_art import fetch_cover_for_album
+from app.services.search import search_albums as search_albums_service
 from app.models import Album, Track, Review, LogEntry
 from app.schemas.album import AlbumCreate, AlbumResponse, AlbumUpdate
 from app.middleware.auth import get_current_user_required
@@ -37,17 +38,8 @@ def search_albums(
     offset: int = Query(0, ge=0),
     db=Depends(get_db),
 ):
-    q = q.strip()
-    if not q:
-        return {"data": [], "total": 0, "limit": limit, "offset": offset}
-    qry = (
-        db.query(Album)
-        .filter(
-            (Album.title.ilike(f"%{q}%")) | (Album.artist.ilike(f"%{q}%"))
-        )
-    )
-    total = qry.count()
-    albums = qry.offset(offset).limit(limit).all()
+    """Search albums by title/artist. Uses PostgreSQL FTS + trigram fuzzy when available."""
+    albums, total = search_albums_service(db, q, limit=limit, offset=offset)
     return {
         "data": [_album_to_dict(a) for a in albums],
         "total": total,

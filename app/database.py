@@ -61,4 +61,11 @@ def init_db() -> None:
                 ))
                 conn.commit()
         except Exception:
-            pass  # Column may already exist from create_all
+            pass  # Column may already exist
+        # Enable pg_trgm for fuzzy search (optional; search falls back to ILIKE if unavailable)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+                conn.commit()
+        except Exception:
+            pass  # Extension may not be available or already exists

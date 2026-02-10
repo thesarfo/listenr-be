@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.database import get_db
-from app.models import Album, User
+from app.services.search import search_albums as search_albums_service, search_users as search_users_service
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -14,30 +14,18 @@ def global_search(
     limit: int = Query(20, ge=1, le=50),
     db=Depends(get_db),
 ):
-    q = q.strip()
-    if not q:
-        return {"albums": [], "users": []}
+    """Global search: albums and users. Uses PostgreSQL FTS + trigram when available."""
     result = {"albums": [], "users": []}
+    if not q.strip():
+        return result
     if type is None or type == "albums":
-        albums = (
-            db.query(Album)
-            .filter(
-                (Album.title.ilike(f"%{q}%")) | (Album.artist.ilike(f"%{q}%"))
-            )
-            .limit(limit)
-            .all()
-        )
+        albums, _ = search_albums_service(db, q, limit=limit, offset=0)
         result["albums"] = [
             {"id": a.id, "title": a.title, "artist": a.artist, "cover_url": a.cover_url}
             for a in albums
         ]
     if type is None or type == "users":
-        users = (
-            db.query(User)
-            .filter(User.username.ilike(f"%{q}%"))
-            .limit(limit)
-            .all()
-        )
+        users, _ = search_users_service(db, q, limit=limit, offset=0)
         result["users"] = [
             {"id": u.id, "username": u.username, "avatar_url": u.avatar_url}
             for u in users
