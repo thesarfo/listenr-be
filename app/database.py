@@ -32,7 +32,6 @@ def get_db() -> Session:
 def init_db() -> None:
     """Create all tables."""
     Base.metadata.create_all(bind=engine)
-    # Migrations: add columns if missing (SQLite and PostgreSQL)
     if "sqlite" in database_url:
         with engine.connect() as conn:
             r = conn.execute(text("PRAGMA table_info(albums)"))
@@ -45,12 +44,20 @@ def init_db() -> None:
             if "is_admin" not in cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"))
                 conn.commit()
+            if "google_id" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR(64)"))
+                conn.commit()
+            if "hashed_password" in cols:
+                pass  # SQLite doesn't support ALTER COLUMN; create_all handles new schema
     else:
         # PostgreSQL: add is_admin if missing
         try:
             with engine.connect() as conn:
                 conn.execute(text(
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL"
+                ))
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(64)"
                 ))
                 conn.commit()
         except Exception:

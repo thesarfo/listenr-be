@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     admin_user_ids: str = ""  # Comma-separated user IDs allowed to access admin dashboard
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    frontend_url: str = "http://localhost:5173"  # For OAuth redirect after login
 
     class Config:
         env_file = ".env"
