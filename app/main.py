@@ -65,6 +65,26 @@ app = FastAPI(
 )
 
 app.add_middleware(LoggingMiddleware)
+
+
+class ProxyHeadersMiddleware:
+    """Trust X-Forwarded-Proto so url_for() uses https when behind Railway/nginx."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            forwarded_proto = next(
+                (v.decode() for k, v in scope.get("headers", []) if k == b"x-forwarded-proto"),
+                None,
+            )
+            if forwarded_proto == "https":
+                scope["scheme"] = "https"
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(ProxyHeadersMiddleware)
 origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
